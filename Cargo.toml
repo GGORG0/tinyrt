@@ -4,3 +4,24 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+axum = { version = "0.8.4", features = ["macros"] }
+axum-extra = "0.10.1"
+color-eyre = "0.6.5"
+tokio = { version = "1.47.1", features = ["full"] }
+tracing = { version = "0.1.41", features = ["log"] }
+tracing-error = "0.2.1"
+tracing-subscriber = { version = "0.3.19", features = [
+    "chrono",
+    "json",
+    "env-filter",
+    "local-time",
+    "serde",
+    "serde_json",
+    "time",
+] }
+utoipa = { version = "5.4.0", features = ["axum_extras"] }
+utoipa-axum = "0.2.0"
+utoipa-rapidoc = { version = "6.0.0", features = ["axum"] }
+utoipa-redoc = { version = "6.0.0", features = ["axum"] }
+utoipa-scalar = { version = "0.3.0", features = ["axum"] }
+utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
