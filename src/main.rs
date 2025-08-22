@@ -13,6 +13,13 @@ use utoipa_redoc::{Redoc, Servable as RedocServable};
 use utoipa_scalar::{Scalar, Servable as ScalarServable};
 use utoipa_swagger_ui::SwaggerUi;
 
+mod db;
+mod topic;
+
+pub use serde_json::Value;
+
+use crate::db::ArcDb;
+
 #[derive(OpenApi)]
 #[openapi()]
 struct ApiDoc;
@@ -38,6 +45,10 @@ async fn main() -> Result<()> {
     );
 
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi()).split_for_parts();
+
+    let db: ArcDb = Default::default();
+
+    let router = router.with_state(db);
 
     let router = router
         .merge(SwaggerUi::new("/api-docs/swagger-ui").url("/api-docs/openapi.json", api.clone()))
