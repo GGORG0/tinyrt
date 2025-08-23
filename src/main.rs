@@ -1,6 +1,7 @@
 use std::net::{Ipv4Addr, SocketAddr};
 
 use axum::Router;
+use bytes::Bytes;
 use color_eyre::eyre::{Context, Result};
 use tokio::net::TcpListener;
 use tracing::{info, level_filters::LevelFilter};
@@ -34,7 +35,7 @@ async fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
 
-    let db: ArcDb = Default::default();
+    let db: ArcDb<Bytes> = Default::default();
 
     let router = Router::new().with_state(db);
 
