@@ -61,26 +61,32 @@ async fn subscribe(
 
     let mut receiver = db.get(&topic).subscribe();
 
-    let handle = tokio::spawn(async move {
-        while let Ok(value) = receiver.recv().await {
-            let res = match mode {
-                SubscriptionMode::Binary => socket.emit("message", &value),
-                SubscriptionMode::String => socket.emit("message", &String::from_utf8_lossy(&value)),
-                SubscriptionMode::Json => {
-                    if let Ok(json) = serde_json::from_slice::<Value>(&value) {
-                        socket.emit("message", &json)
-                    } else {
-                        socket.emit("message", &String::from_utf8_lossy(&value))
-                    }
-                }
-            };
+    let handle = {
+        let topic = topic.clone();
 
-            if res.is_err() {
-                break;
+        tokio::spawn(async move {
+            while let Ok(value) = receiver.recv().await {
+                let res = match mode {
+                    SubscriptionMode::Binary => socket.emit("message", &(&topic, &value)),
+                    SubscriptionMode::String => {
+                        socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
+                    }
+                    SubscriptionMode::Json => {
+                        if let Ok(json) = serde_json::from_slice::<Value>(&value) {
+                            socket.emit("message", &(&topic, &json))
+                        } else {
+                            socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
+                        }
+                    }
+                };
+
+                if res.is_err() {
+                    break;
+                }
             }
-        }
-    })
-    .abort_handle();
+        })
+        .abort_handle()
+    };
 
     abortmap.insert(topic, handle);
 }
