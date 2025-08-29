@@ -22,3 +22,6 @@ tracing-subscriber = { version = "0.3.19", features = [
     "serde_json",
     "time",
 ] }
+
+[features]
+sse_dos_newlines = []

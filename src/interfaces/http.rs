@@ -47,16 +47,16 @@ async fn sse_stream(
 ) -> Sse<impl Stream<Item = Result<Event, Infallible>>> {
     let receiver = db.get(&topic).subscribe();
 
-    let stream = BroadcastStream::new(receiver).filter_map(|value| {
-        value
-            .ok()
-            .and_then(|v| {
-                std::str::from_utf8(&v)
-                    .ok()
-                    .map(|s| Event::default().data(s))
-            })
-            .map(Ok)
-    });
+    let stream = BroadcastStream::new(receiver)
+        .filter_map(|value| value.ok())
+        .filter_map(|value| str::from_utf8(&value).ok().map(String::from))
+        .map(|value| {
+            #[cfg(feature = "sse_dos_newlines")]
+            let value = value.replace("\r\n", "\n");
+
+            value.replace('\r', "\n")
+        })
+        .map(|value| Ok(Event::default().data(value)));
 
     Sse::new(stream).keep_alive(KeepAlive::default())
 }
