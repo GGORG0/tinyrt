@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
+use bytes::Bytes;
 use dashmap::DashMap;
 
 use crate::topic::Topic;
 
-pub type ArcDb<T> = Arc<Db<T>>;
+pub type ArcDb = Arc<Db<Bytes>>;
 
 pub struct Db<T>
 where

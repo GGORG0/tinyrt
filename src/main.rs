@@ -1,7 +1,6 @@
 use std::net::{Ipv4Addr, SocketAddr};
 
 use axum::Router;
-use bytes::Bytes;
 use color_eyre::eyre::{Context, Result};
 use tokio::net::TcpListener;
 use tracing::{info, level_filters::LevelFilter};
@@ -9,6 +8,7 @@ use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod db;
+mod interfaces;
 mod topic;
 
 pub use serde_json::Value;
@@ -35,9 +35,13 @@ async fn main() -> Result<()> {
         env!("CARGO_PKG_VERSION")
     );
 
-    let db: ArcDb<Bytes> = Default::default();
+    let db: ArcDb = Default::default();
 
-    let router = Router::new().with_state(db);
+    let router = Router::new();
+
+    let router = router.merge(interfaces::http::router());
+
+    let router = router.with_state(db);
 
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
     let listener = TcpListener::bind(address).await?;
