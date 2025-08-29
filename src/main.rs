@@ -41,6 +41,8 @@ async fn main() -> Result<()> {
 
     let router = router.merge(interfaces::http::router());
 
+    let router = router.layer(interfaces::socketio::layer(db.clone()));
+
     let router = router.with_state(db);
 
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
