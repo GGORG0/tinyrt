@@ -49,7 +49,7 @@ async fn sse_stream(
 
     let stream = BroadcastStream::new(receiver)
         .filter_map(|value| value.ok())
-        .filter_map(|value| str::from_utf8(&value).ok().map(String::from))
+        .filter_map(|value| String::from_utf8(value.to_vec()).ok())
         .map(|value| {
             #[cfg(feature = "sse_dos_newlines")]
             let value = value.replace("\r\n", "\n");
