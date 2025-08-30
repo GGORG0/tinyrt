@@ -20,7 +20,6 @@ socketioxide = { version = "0.17.2", features = [
 tokio = { version = "1.47.1", features = ["net", "rt-multi-thread", "sync"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
 tracing = { version = "0.1.41", features = ["log"] }
-tracing-error = "0.2.1"
 tracing-subscriber = { version = "0.3.19", features = [
     "env-filter",
     "json",

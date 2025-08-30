@@ -6,7 +6,6 @@ use std::{
 use axum::Router;
 use tokio::net::TcpListener;
 use tracing::info;
-use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod db;
@@ -21,7 +20,6 @@ use crate::db::ArcDb;
 async fn main() -> Result<(), Error> {
     tracing_subscriber::Registry::default()
         .with(tracing_subscriber::fmt::layer().with_span_events(FmtSpan::NEW | FmtSpan::CLOSE))
-        .with(ErrorLayer::default())
         .with(
             tracing_subscriber::EnvFilter::builder()
                 .with_default_directive(
