@@ -36,7 +36,9 @@ async fn handle_get(
 ) -> impl IntoResponse {
     if sse::is_sse_request(&headers) {
         return sse::sse_stream(path, state).await.into_response();
-    } else if ws::is_ws_request(&connection, &upgrade) {
+    }
+
+    if ws::is_ws_request(&connection, &upgrade) {
         return ws::get_upgrade_handler(&mut parts, path, query, state)
             .await
             .into_response();

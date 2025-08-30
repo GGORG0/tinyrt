@@ -31,6 +31,7 @@ async fn main() -> Result<(), Error> {
 
     let router = router.merge(interfaces::http::router());
 
+    #[cfg(feature = "socketio")]
     let router = router.layer(interfaces::socketio::layer(db.clone()));
 
     let router = router.with_state(db);
@@ -45,7 +46,7 @@ async fn main() -> Result<(), Error> {
     axum::serve(listener, router.into_make_service()).await
 }
 
-#[cfg(feature = "tracing-subscriber")]
+#[cfg(feature = "logging")]
 fn setup_tracing() {
     use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -64,5 +65,5 @@ fn setup_tracing() {
         .init();
 }
 
-#[cfg(not(feature = "tracing-subscriber"))]
+#[cfg(not(feature = "logging"))]
 fn setup_tracing() {}
