@@ -20,7 +20,7 @@ mod ws;
 
 pub fn router() -> Router<ArcDb> {
     Router::<ArcDb>::new().route(
-        "/{topic}",
+        "/{*topic}",
         get(handle_get).post(post_value).connect(ws::handle_connect),
     )
 }
