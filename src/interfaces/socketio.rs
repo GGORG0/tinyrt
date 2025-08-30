@@ -2,10 +2,7 @@ use socketioxide::{SocketIoBuilder, layer::SocketIoLayer};
 
 use crate::db::ArcDb;
 
-#[cfg(all(
-    feature = "socketio",
-    not(any(feature = "socketio_pub", feature = "socketio_sub"))
-))]
+#[cfg(not(any(feature = "socketio_pub", feature = "socketio_sub")))]
 compile_error!(
     "The \"socketio\" feature must be enabled along with \"socketio_pub\" or \"socketio_sub\" (or both via \"socketio_full\")."
 );
