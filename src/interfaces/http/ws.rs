@@ -36,7 +36,16 @@ pub fn is_ws_request(
     connection.contains(UPGRADE) && *upgrade == Upgrade::websocket()
 }
 
-pub async fn upgrade_handler(
+pub async fn handle_connect(
+    path: Path<String>,
+    state: State<ArcDb>,
+    query: Query<HashMap<String, String>>,
+    mut parts: Parts,
+) -> axum::response::Result<Response> {
+    get_upgrade_handler(&mut parts, path, query, state).await
+}
+
+pub async fn get_upgrade_handler(
     parts: &mut Parts,
     Path(topic): Path<String>,
     Query(params): Query<HashMap<String, String>>,

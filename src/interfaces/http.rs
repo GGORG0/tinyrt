@@ -19,7 +19,10 @@ mod sse;
 mod ws;
 
 pub fn router() -> Router<ArcDb> {
-    Router::<ArcDb>::new().route("/{topic}", get(handle_get).post(post_value))
+    Router::<ArcDb>::new().route(
+        "/{topic}",
+        get(handle_get).post(post_value).connect(ws::handle_connect),
+    )
 }
 
 async fn handle_get(
@@ -34,7 +37,7 @@ async fn handle_get(
     if sse::is_sse_request(&headers) {
         return sse::sse_stream(path, state).await.into_response();
     } else if ws::is_ws_request(&connection, &upgrade) {
-        return ws::upgrade_handler(&mut parts, path, query, state)
+        return ws::get_upgrade_handler(&mut parts, path, query, state)
             .await
             .into_response();
     }
