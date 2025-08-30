@@ -7,7 +7,7 @@ use crate::db::ArcDb;
     not(any(feature = "socketio_pub", feature = "socketio_sub"))
 ))]
 compile_error!(
-    "The \"socketio\" feature must be enabled along with \"socketio_pub\" or \"socketio_sub\" (or both)."
+    "The \"socketio\" feature must be enabled along with \"socketio_pub\" or \"socketio_sub\" (or both via \"socketio_full\")."
 );
 
 pub fn layer(db: ArcDb) -> SocketIoLayer {
