@@ -1,7 +1,9 @@
-use std::net::{Ipv4Addr, SocketAddr};
+use std::{
+    io::Error,
+    net::{Ipv4Addr, SocketAddr},
+};
 
 use axum::Router;
-use color_eyre::eyre::{Context, Result};
 use tokio::net::TcpListener;
 use tracing::info;
 use tracing_error::ErrorLayer;
@@ -16,18 +18,21 @@ pub use serde_json::Value;
 use crate::db::ArcDb;
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    color_eyre::install()?;
-
+async fn main() -> Result<(), Error> {
     tracing_subscriber::Registry::default()
         .with(tracing_subscriber::fmt::layer().with_span_events(FmtSpan::NEW | FmtSpan::CLOSE))
         .with(ErrorLayer::default())
         .with(
             tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(format!("{}=info", env!("CARGO_PKG_NAME")).parse()?)
-                .from_env()?,
+                .with_default_directive(
+                    format!("{}=info", env!("CARGO_PKG_NAME"))
+                        .parse()
+                        .expect("hardcoded default directive should be valid"),
+                )
+                .from_env()
+                .map_err(Error::other)?,
         )
-        .try_init()?;
+        .init();
 
     info!(
         "Starting {} {}...",
@@ -47,14 +52,10 @@ async fn main() -> Result<()> {
 
     let address = SocketAddr::from((Ipv4Addr::UNSPECIFIED, 8080));
     let listener = TcpListener::bind(address).await?;
-    info!(
-        "Listening on {}.",
-        listener
-            .local_addr()
-            .wrap_err("failed to get local address")?,
-    );
 
-    axum::serve(listener, router.into_make_service()).await?;
+    if let Ok(local_addr) = listener.local_addr() {
+        info!("Listening on {}.", local_addr);
+    }
 
-    Ok(())
+    axum::serve(listener, router.into_make_service()).await
 }
