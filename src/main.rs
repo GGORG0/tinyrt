@@ -11,8 +11,6 @@ mod db;
 mod interfaces;
 mod topic;
 
-pub use serde_json::Value;
-
 use crate::db::ArcDb;
 
 #[tokio::main]
