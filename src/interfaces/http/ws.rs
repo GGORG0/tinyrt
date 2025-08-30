@@ -17,6 +17,7 @@ use futures_util::{
     SinkExt, StreamExt,
     stream::{SplitSink, SplitStream},
 };
+use tracing::instrument;
 
 use crate::db::ArcDb;
 
@@ -45,6 +46,7 @@ pub async fn upgrade_handler(
     Ok(ws.on_upgrade(|socket| ws_handler(socket, topic, params, db)))
 }
 
+#[instrument(level = "debug", skip(socket, params, db))]
 async fn ws_handler(socket: WebSocket, topic: String, params: HashMap<String, String>, db: ArcDb) {
     let (sender, receiver) = socket.split();
 
@@ -58,6 +60,7 @@ async fn ws_handler(socket: WebSocket, topic: String, params: HashMap<String, St
     }
 }
 
+#[instrument(level = "debug", skip(receiver, topic, db))]
 async fn rx(mut receiver: SplitStream<WebSocket>, topic: String, db: ArcDb) {
     while let Some(Ok(msg)) = receiver.next().await {
         let data = match msg {
@@ -70,6 +73,7 @@ async fn rx(mut receiver: SplitStream<WebSocket>, topic: String, db: ArcDb) {
     }
 }
 
+#[instrument(level = "debug", skip(sender, topic, db))]
 async fn tx(mut sender: SplitSink<WebSocket, Message>, topic: String, tx_binary: bool, db: ArcDb) {
     let mut receiver = db.get(&topic).subscribe();
 

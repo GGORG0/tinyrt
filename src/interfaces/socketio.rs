@@ -9,6 +9,8 @@ use socketioxide::{
     extract::{Data, Extension, SocketRef, State},
     layer::SocketIoLayer,
 };
+use tokio::sync::broadcast::Receiver;
+use tracing::instrument;
 
 use crate::db::ArcDb;
 
@@ -32,7 +34,7 @@ async fn on_connect(socket: SocketRef) {
     socket.on_disconnect(on_disconnect);
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 enum SubscriptionMode {
     String,
@@ -59,36 +61,39 @@ async fn subscribe(
         handle.abort();
     }
 
-    let mut receiver = db.get(&topic).subscribe();
+    let receiver = db.get(&topic).subscribe();
 
-    let handle = {
-        let topic = topic.clone();
-
-        tokio::spawn(async move {
-            while let Ok(value) = receiver.recv().await {
-                let res = match mode {
-                    SubscriptionMode::Binary => socket.emit("message", &(&topic, &value)),
-                    SubscriptionMode::String => {
-                        socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
-                    }
-                    SubscriptionMode::Json => {
-                        if let Ok(json) = serde_json::from_slice::<Value>(&value) {
-                            socket.emit("message", &(&topic, &json))
-                        } else {
-                            socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
-                        }
-                    }
-                };
-
-                if res.is_err() {
-                    break;
-                }
-            }
-        })
-        .abort_handle()
-    };
+    let handle = tokio::spawn(socketio_tx(socket, topic.clone(), receiver, mode)).abort_handle();
 
     abortmap.insert(topic, handle);
+}
+
+#[instrument(level = "debug", skip(socket, receiver))]
+async fn socketio_tx(
+    socket: SocketRef,
+    topic: String,
+    mut receiver: Receiver<Bytes>,
+    mode: SubscriptionMode,
+) {
+    while let Ok(value) = receiver.recv().await {
+        let res = match mode {
+            SubscriptionMode::Binary => socket.emit("message", &(&topic, &value)),
+            SubscriptionMode::String => {
+                socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
+            }
+            SubscriptionMode::Json => {
+                if let Ok(json) = serde_json::from_slice::<Value>(&value) {
+                    socket.emit("message", &(&topic, &json))
+                } else {
+                    socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
+                }
+            }
+        };
+
+        if res.is_err() {
+            break;
+        }
+    }
 }
 
 async fn unsubscribe(Extension(abortmap): Extension<AbortMap>, Data(topic): Data<String>) {
