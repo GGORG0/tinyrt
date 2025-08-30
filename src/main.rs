@@ -6,7 +6,6 @@ use std::{
 use axum::Router;
 use tokio::net::TcpListener;
 use tracing::info;
-use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
 mod db;
 mod interfaces;
@@ -18,19 +17,7 @@ use crate::db::ArcDb;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    tracing_subscriber::Registry::default()
-        .with(tracing_subscriber::fmt::layer().with_span_events(FmtSpan::NEW | FmtSpan::CLOSE))
-        .with(
-            tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(
-                    format!("{}=info", env!("CARGO_PKG_NAME"))
-                        .parse()
-                        .expect("hardcoded default directive should be valid"),
-                )
-                .from_env()
-                .map_err(Error::other)?,
-        )
-        .init();
+    setup_tracing();
 
     info!(
         "Starting {} {}...",
@@ -57,3 +44,25 @@ async fn main() -> Result<(), Error> {
 
     axum::serve(listener, router.into_make_service()).await
 }
+
+#[cfg(feature = "tracing-subscriber")]
+fn setup_tracing() {
+    use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
+
+    tracing_subscriber::Registry::default()
+        .with(tracing_subscriber::fmt::layer().with_span_events(FmtSpan::NEW | FmtSpan::CLOSE))
+        .with(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(
+                    format!("{}=info", env!("CARGO_PKG_NAME"))
+                        .parse()
+                        .expect("hardcoded default directive should be valid"),
+                )
+                .from_env()
+                .expect("Failed to parse RUST_LOG environment variable"),
+        )
+        .init();
+}
+
+#[cfg(not(feature = "tracing-subscriber"))]
+fn setup_tracing() {}

@@ -24,7 +24,8 @@ tracing-subscriber = { version = "0.3.19", features = [
     "env-filter",
     "json",
     "local-time",
-] }
+], optional = true }
 
 [features]
+default = ["tracing-subscriber"]
 sse_dos_newlines = []
