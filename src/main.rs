@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use axum::Router;
 use color_eyre::eyre::{Context, Result};
 use tokio::net::TcpListener;
-use tracing::{info, level_filters::LevelFilter};
+use tracing::info;
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt::format::FmtSpan, layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         .with(ErrorLayer::default())
         .with(
             tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
+                .with_default_directive(format!("{}=info", env!("CARGO_PKG_NAME")).parse()?)
                 .from_env()?,
         )
         .try_init()?;
