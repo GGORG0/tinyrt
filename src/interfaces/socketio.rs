@@ -39,6 +39,7 @@ async fn on_connect() {}
 #[cfg(feature = "socketio_pub")]
 mod r#pub {
     use bytes::Bytes;
+    use cfg_if::cfg_if;
     use rmpv::Value;
     use socketioxide::extract::{Data, State};
 
@@ -48,7 +49,15 @@ mod r#pub {
         let value = match value {
             Value::Binary(bin) => Bytes::from(bin),
             Value::String(s) => Bytes::from(s.into_str().unwrap_or_default()),
-            _ => Bytes::from(serde_json::to_string(&value).unwrap_or_else(|_| value.to_string())),
+            _ => Bytes::from({
+                cfg_if! {
+                    if #[cfg(feature = "socketio_json")] {
+                        serde_json::to_string(&value).unwrap_or_else(|_| value.to_string())
+                    } else {
+                        value.to_string()
+                    }
+                }
+            }),
         };
 
         let _ = db.get(&topic).send(value).await;
@@ -62,7 +71,6 @@ mod sub {
     use bytes::Bytes;
 
     use dashmap::DashMap;
-    use rmpv::Value;
     use serde::Deserialize;
     use socketioxide::extract::{Data, Extension, SocketRef, State};
     use tokio::sync::broadcast::Receiver;
@@ -77,6 +85,8 @@ mod sub {
     enum SubscriptionMode {
         String,
         Binary,
+
+        #[cfg(feature = "socketio_json")]
         Json,
     }
 
@@ -120,8 +130,10 @@ mod sub {
                 SubscriptionMode::String => {
                     socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
                 }
+
+                #[cfg(feature = "socketio_json")]
                 SubscriptionMode::Json => {
-                    if let Ok(json) = serde_json::from_slice::<Value>(&value) {
+                    if let Ok(json) = serde_json::from_slice::<rmpv::Value>(&value) {
                         socket.emit("message", &(&topic, &json))
                     } else {
                         socket.emit("message", &(&topic, String::from_utf8_lossy(&value)))
