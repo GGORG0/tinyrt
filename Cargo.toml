@@ -19,6 +19,7 @@ socketioxide = { version = "0.17.2", features = [
 ], optional = true }
 tokio = { version = "1.47.1", features = ["net", "rt-multi-thread", "sync"] }
 tokio-stream = { version = "0.1.17", features = ["sync"] }
+tower-http = { version = "0.6.6", optional = true }
 tracing = { version = "0.1.41", features = ["log"] }
 tracing-subscriber = { version = "0.3.19", features = [
     "env-filter",
@@ -27,8 +28,9 @@ tracing-subscriber = { version = "0.3.19", features = [
 ], optional = true }
 
 [features]
-default = ["logging", "socketio_full"]
+default = ["logging", "permissive_cors", "socketio_full"]
 logging = ["dep:tracing-subscriber", "socketioxide?/tracing"]
+permissive_cors = ["tower-http/cors"]
 
 socketio = ["dep:socketioxide", "dep:rmpv", "dep:serde"]
 socketio_pub = ["socketio"]
@@ -38,3 +40,4 @@ socketio_full = ["socketio", "socketio_pub", "socketio_sub", "socketio_json"]
 
 sse_dos_newlines = []
 serde_json = ["dep:serde_json"]
+tower-http = ["dep:tower-http"]

@@ -5,6 +5,8 @@ use std::{
 
 use axum::Router;
 use tokio::net::TcpListener;
+#[cfg(feature = "permissive_cors")]
+use tower_http::cors::CorsLayer;
 use tracing::info;
 
 mod db;
@@ -31,6 +33,9 @@ async fn main() -> Result<(), Error> {
 
     #[cfg(feature = "socketio")]
     let router = router.layer(interfaces::socketio::layer(db.clone()));
+
+    #[cfg(feature = "permissive_cors")]
+    let router = router.layer(CorsLayer::permissive());
 
     let router = router.with_state(db);
 
