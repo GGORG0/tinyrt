@@ -39,7 +39,7 @@ async fn main() -> Result<(), Error> {
     #[cfg(feature = "logging")]
     let router = router.layer(
         tower_http::trace::TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
-            let matched_path = request
+            let matched = request
                 .extensions()
                 .get::<MatchedPath>()
                 .map(MatchedPath::as_str);
@@ -47,7 +47,8 @@ async fn main() -> Result<(), Error> {
             info_span!(
                 "http_request",
                 method = ?request.method(),
-                matched_path,
+                matched,
+                uri = %request.uri(),
                 some_other_field = tracing::field::Empty,
             )
         }),
