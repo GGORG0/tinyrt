@@ -1,13 +1,12 @@
+use std::error::Error as _;
 use std::{
     io::Error,
     net::{Ipv4Addr, SocketAddr},
 };
 
-use axum::Router;
+use axum::{Router, extract::MatchedPath, http::Request};
 use tokio::net::TcpListener;
-#[cfg(feature = "permissive_cors")]
-use tower_http::cors::CorsLayer;
-use tracing::info;
+use tracing::{info, info_span};
 
 mod db;
 mod interfaces;
@@ -35,7 +34,24 @@ async fn main() -> Result<(), Error> {
     let router = router.layer(interfaces::socketio::layer(db.clone()));
 
     #[cfg(feature = "permissive_cors")]
-    let router = router.layer(CorsLayer::permissive());
+    let router = router.layer(tower_http::cors::CorsLayer::permissive());
+
+    #[cfg(feature = "logging")]
+    let router = router.layer(
+        tower_http::trace::TraceLayer::new_for_http().make_span_with(|request: &Request<_>| {
+            let matched_path = request
+                .extensions()
+                .get::<MatchedPath>()
+                .map(MatchedPath::as_str);
+
+            info_span!(
+                "http_request",
+                method = ?request.method(),
+                matched_path,
+                some_other_field = tracing::field::Empty,
+            )
+        }),
+    );
 
     let router = router.with_state(db);
 
@@ -56,13 +72,25 @@ fn setup_tracing() {
     tracing_subscriber::Registry::default()
         .with(tracing_subscriber::fmt::layer().with_span_events(FmtSpan::NEW | FmtSpan::CLOSE))
         .with(
-            tracing_subscriber::EnvFilter::builder()
-                .with_default_directive(
-                    format!("{}=info", env!("CARGO_PKG_NAME"))
-                        .parse()
-                        .expect("hardcoded default directive should be valid"),
-                )
-                .from_env()
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .or_else(|err| {
+                    use std::env::VarError;
+
+                    if err.source().and_then(|e| e.downcast_ref::<VarError>()) == Some(&VarError::NotPresent) {
+                        #[cfg(debug_assertions)]
+                        let default_directive = format!(
+                            "warn,{}=debug,tower_http=debug,axum::rejection=trace",
+                            env!("CARGO_PKG_NAME")
+                        );
+
+                        #[cfg(not(debug_assertions))]
+                        let default_directive = format!("warn,{}=info", env!("CARGO_PKG_NAME"));
+
+                        Ok(default_directive.into())
+                    } else {
+                        Err(err)
+                    }
+                })
                 .expect("Failed to parse RUST_LOG environment variable"),
         )
         .init();

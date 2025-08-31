@@ -29,7 +29,7 @@ tracing-subscriber = { version = "0.3.19", features = [
 
 [features]
 default = ["logging", "permissive_cors", "socketio_full"]
-logging = ["dep:tracing-subscriber", "socketioxide?/tracing"]
+logging = ["dep:tracing-subscriber", "socketioxide?/tracing", "tower-http/trace"]
 permissive_cors = ["tower-http/cors"]
 
 socketio = ["dep:socketioxide", "dep:rmpv", "dep:serde"]
