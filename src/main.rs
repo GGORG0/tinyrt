@@ -76,7 +76,9 @@ fn setup_tracing() {
                 .or_else(|err| {
                     use std::env::VarError;
 
-                    if err.source().and_then(|e| e.downcast_ref::<VarError>()) == Some(&VarError::NotPresent) {
+                    if err.source().and_then(|e| e.downcast_ref::<VarError>())
+                        == Some(&VarError::NotPresent)
+                    {
                         #[cfg(debug_assertions)]
                         let default_directive = format!(
                             "warn,{}=debug,tower_http=debug,axum::rejection=trace",
